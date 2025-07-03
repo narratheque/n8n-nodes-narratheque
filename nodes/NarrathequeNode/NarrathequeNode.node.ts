@@ -32,14 +32,14 @@ export class NarrathequeNode implements INodeType {
 				options: [
 					{
 						name: 'Europe',
-						value: 'https://narrator-back.test',
+						value: 'https://api.narratheque.io',
 					},
 					{
 						name: 'Canada',
-						value: 'https://narrator-back.ca',
+						value: 'https://api.narratheque.ca',
 					},
 				],
-				default: 'https://narrator-back.test',
+				default: 'https://api.narratheque.io',
 				displayOptions: {
 					show: {
 						useCustomUrl: [false],

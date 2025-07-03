@@ -1,0 +1,20 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "setlocal",
+    "rimraf",
+    "errorlevel",
+    "usebackq",
+    "lintfix",
+		"BTCUSDT",
+		"ETHUSDT",
+		"binance"
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    "dist/**",
+    "package-lock.json",
+    "yarn.lock"
+  ]
+}

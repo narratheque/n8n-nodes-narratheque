@@ -93,6 +93,13 @@ export class NarrathequeNode implements INodeType {
 				placeholder: 'https://example.com/file.jpg',
 				description: 'URLs to send if no binary file is provided',
 			},
+			{
+				displayName: 'Text Content Field',
+				name: 'textContentField',
+				type: 'string',
+				default: '',
+				description: 'Text to pass to the Narrathèque API. This will be used as the content of the file if no binary file is provided.',
+			},
 		],
 	};
 
@@ -113,9 +120,11 @@ export class NarrathequeNode implements INodeType {
 			const token = this.getNodeParameter('token', i) as string;
 			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
 			const urlList = this.getNodeParameter('urlList', i) as string[];
+			const textContentField = this.getNodeParameter('textContentField', i) as string;
 
 			const item = items[i];
 			const hasBinary = item.binary?.[binaryPropertyName] !== undefined;
+			const hasText = textContentField && item.json?.[textContentField];
 
 			// Cas 1 : Fichier binaire présent
 			if (hasBinary) {
@@ -143,7 +152,34 @@ export class NarrathequeNode implements INodeType {
 					},
 				});
 			}
-			// Cas 2 : Liste d'URLs présente
+			// Cas 2 : Champ texte JSON à transformer en .txt
+			else if (hasText) {
+				const textContent = item.json[textContentField] as string;
+				const buffer = Buffer.from(textContent, 'utf-8');
+
+				const form = new FormData();
+				form.append('file', buffer, {
+					filename: 'document.txt',
+					contentType: 'text/plain',
+				});
+				form.append('filename', 'document.txt');
+				form.append('contentType', 'text/plain');
+
+				const headers = {
+					...form.getHeaders(),
+					Authorization: `Bearer ${token}`,
+				};
+
+				const response = await axios.post(`${urlBase}/api/app/documents-jwt`, form, { headers });
+
+				returnData.push({
+					json: {
+						status: 'uploaded via generated text file',
+						response: response.data,
+					},
+				});
+			}
+			// Cas 3 : Liste d’URLs
 			else if (urlList && urlList.length > 0) {
 				const headers = {
 					'Content-Type': 'application/json',
@@ -161,9 +197,9 @@ export class NarrathequeNode implements INodeType {
 					},
 				});
 			}
-			// Cas 3 : Rien fourni
+			// Cas 4 : rien fourni
 			else {
-				throw new NodeOperationError(this.getNode(), `Item ${i} : aucun fichier binaire ni URL fournie.`);
+				throw new NodeOperationError(this.getNode(), `Item ${i} : aucun fichier, contenu texte, ni URL fourni.`);
 			}
 		}
 

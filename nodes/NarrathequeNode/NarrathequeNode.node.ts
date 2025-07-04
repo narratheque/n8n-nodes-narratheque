@@ -26,7 +26,7 @@ export class NarrathequeNode implements INodeType {
 		usableAsTool: true,
 		properties: [
 			{
-				displayName: 'Narratheque choice',
+				displayName: 'Narratheque Choice',
 				name: 'predefinedUrl',
 				type: 'options',
 				options: [
@@ -47,7 +47,7 @@ export class NarrathequeNode implements INodeType {
 				},
 			},
 			{
-				displayName: 'Custom install',
+				displayName: 'Custom Install',
 				name: 'useCustomUrl',
 				type: 'boolean',
 				default: false,
@@ -68,6 +68,7 @@ export class NarrathequeNode implements INodeType {
 				displayName: 'Company Token',
         name: 'token',
         type: 'string',
+								typeOptions: { password: true },
         default: '',
 				description: 'Token from your company in narratheque.io or your custom instance',
         placeholder: 'cxx-xxx-xxx-xxx',
@@ -100,32 +101,30 @@ export class NarrathequeNode implements INodeType {
 	// with whatever the user has entered.
 	// You can make async calls and use `await`.
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-    const items = this.getInputData();
-    const returnData: INodeExecutionData[] = [];
+		const items = this.getInputData();
+		const returnData: INodeExecutionData[] = [];
 
-		if (items && items.length > 0) {
-			for (let i = 0; i < items.length; i++) {
-				const useCustomUrl = this.getNodeParameter('useCustomUrl', i) as boolean;
-				let url = useCustomUrl
-					? (this.getNodeParameter('customUrl', i) as string)
-					: (this.getNodeParameter('predefinedUrl', i) as string);
+		for (let i = 0; i < items.length; i++) {
+			const useCustomUrl = this.getNodeParameter('useCustomUrl', i) as boolean;
+			const urlBase = useCustomUrl
+				? (this.getNodeParameter('customUrl', i) as string)
+				: (this.getNodeParameter('predefinedUrl', i) as string);
 
-				url += '/api/app/documents-jwt';
+			const token = this.getNodeParameter('token', i) as string;
+			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
+			const urlList = this.getNodeParameter('urlList', i) as string[];
 
-				const token = this.getNodeParameter('token', i) as string;
-				const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
+			const item = items[i];
+			const hasBinary = item.binary?.[binaryPropertyName] !== undefined;
 
-				const item = items[i];
-				if (!item.binary || !item.binary[binaryPropertyName]) {
-					throw new NodeOperationError(this.getNode(), `The item has no binary field '${binaryPropertyName}' [item ${i}]`);
-				}
-
+			// Cas 1 : Fichier binaire présent
+			if (hasBinary) {
 				const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);
 
 				const form = new FormData();
-				form.append('file', Buffer.from(binaryData.data, (binaryData.encoding || 'utf8') as BufferEncoding), {
+				form.append('file', Buffer.from(binaryData.data, binaryData.encoding as BufferEncoding), {
 					filename: binaryData.fileName || 'file',
-					contentType: binaryData.mimeType,
+					contentType: binaryData.mimeType || 'application/octet-stream',
 				});
 				form.append('filename', binaryData.fileName || 'file');
 				form.append('contentType', binaryData.mimeType || '');
@@ -135,47 +134,39 @@ export class NarrathequeNode implements INodeType {
 					Authorization: `Bearer ${token}`,
 				};
 
-				const response = await axios.post(url, form, { headers });
+				const response = await axios.post(`${urlBase}/api/app/documents-jwt`, form, { headers });
 
 				returnData.push({
 					json: {
-						status: 'uploaded',
+						status: 'uploaded via binary',
 						response: response.data,
 					},
 				});
 			}
-    }
+			// Cas 2 : Liste d'URLs présente
+			else if (urlList && urlList.length > 0) {
+				const headers = {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`,
+				};
 
-		const urlList = this.getNodeParameter('urlList', 0) as string[];
-		if (urlList && urlList.length > 0) {
-			const useCustomUrl = this.getNodeParameter('useCustomUrl', 0) as boolean;
-			let url = useCustomUrl
-				? (this.getNodeParameter('customUrl', 0) as string)
-				: (this.getNodeParameter('predefinedUrl', 0) as string);
+				const response = await axios.post(`${urlBase}/api/app/documents-jwt-from-urls`, {
+					urls: urlList,
+				}, { headers });
 
-			url += '/api/app/documents-jwt-from-urls';
-
-			const token = this.getNodeParameter('token', 0) as string;
-
-			const headers = {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`,
-			};
-
-			const response = await axios.post(
-				url,
-				{ urls: urlList },
-				{ headers }
-			);
-
-			returnData.push({
-				json: {
-					status: 'uploaded',
-					response: response.data,
-				},
-			});
+				returnData.push({
+					json: {
+						status: 'uploaded via urls',
+						response: response.data,
+					},
+				});
+			}
+			// Cas 3 : Rien fourni
+			else {
+				throw new NodeOperationError(this.getNode(), `Item ${i} : aucun fichier binaire ni URL fournie.`);
+			}
 		}
 
-    return [returnData];
-  }
+		return [returnData];
+	}
 }

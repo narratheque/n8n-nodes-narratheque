@@ -4,7 +4,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
+import { NodeConnectionType } from 'n8n-workflow';
 import FormData from 'form-data';
 import axios from 'axios';
 import { Buffer } from 'buffer';
@@ -100,8 +100,6 @@ export class NarrathequeDataNode implements INodeType {
 
 			const token = this.getNodeParameter('token', i) as string;
 			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
-
-			const item = items[i];
 
 			const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);
 

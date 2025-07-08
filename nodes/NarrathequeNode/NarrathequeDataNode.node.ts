@@ -9,17 +9,17 @@ import FormData from 'form-data';
 import axios from 'axios';
 import { Buffer } from 'buffer';
 
-export class NarrathequeNode implements INodeType {
+export class NarrathequeDataNode implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Narrathèque',
-		name: 'narrathequeNode',
+		displayName: 'Narratheque fichier',
+		name: 'narrathequeDataNode',
 		group: ['transform'],
 		icon: 'file:icon.svg',
 		documentationUrl: 'https://narratheque.io/docs/n8n',
 		version: 1,
 		description: 'Noeux qui permet d\'interagir avec la Narrathèque et d\'y ajouter des fichiers dans ses companies',
 		defaults: {
-			name: 'Narrathèque Node',
+			name: 'Narrathèque Node - Fichier',
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
@@ -80,26 +80,7 @@ export class NarrathequeNode implements INodeType {
         type: 'string',
         default: 'data',
         description: 'Name of the binary property containing the file',
-      },
-			{
-				displayName: 'List of URLs',
-				name: 'urlList',
-				type: 'string',
-				typeOptions: {
-					multipleValues: true,
-					multipleValueButtonText: 'Add URL',
-				},
-				default: [],
-				placeholder: 'https://example.com/file.jpg',
-				description: 'URLs to send if no binary file is provided',
-			},
-			{
-				displayName: 'Text Content Field',
-				name: 'textContentField',
-				type: 'string',
-				default: '',
-				description: 'Text to pass to the Narrathèque API. This will be used as the content of the file if no binary file is provided.',
-			},
+      }
 		],
 	};
 
@@ -119,16 +100,10 @@ export class NarrathequeNode implements INodeType {
 
 			const token = this.getNodeParameter('token', i) as string;
 			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
-			const urlList = this.getNodeParameter('urlList', i) as string[];
-			const textContentField = this.getNodeParameter('textContentField', i) as string;
 
 			const item = items[i];
-			const hasBinary = item.binary?.[binaryPropertyName] !== undefined;
-			const hasText = textContentField && item.json?.[textContentField];
 
-			// Cas 1 : Fichier binaire présent
-			if (hasBinary) {
-				const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);
+			const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);
 
 				const form = new FormData();
 				form.append('file', Buffer.from(binaryData.data, binaryData.encoding as BufferEncoding), {
@@ -151,56 +126,6 @@ export class NarrathequeNode implements INodeType {
 						response: response.data,
 					},
 				});
-			}
-			// Cas 2 : Champ texte JSON à transformer en .txt
-			else if (hasText) {
-				const textContent = item.json[textContentField] as string;
-				const buffer = Buffer.from(textContent, 'utf-8');
-
-				const form = new FormData();
-				form.append('file', buffer, {
-					filename: 'document.txt',
-					contentType: 'text/plain',
-				});
-				form.append('filename', 'document.txt');
-				form.append('contentType', 'text/plain');
-
-				const headers = {
-					...form.getHeaders(),
-					Authorization: `Bearer ${token}`,
-				};
-
-				const response = await axios.post(`${urlBase}/api/app/documents-jwt`, form, { headers });
-
-				returnData.push({
-					json: {
-						status: 'uploaded via generated text file',
-						response: response.data,
-					},
-				});
-			}
-			// Cas 3 : Liste d’URLs
-			else if (urlList && urlList.length > 0) {
-				const headers = {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${token}`,
-				};
-
-				const response = await axios.post(`${urlBase}/api/app/documents-jwt-from-urls`, {
-					urls: urlList,
-				}, { headers });
-
-				returnData.push({
-					json: {
-						status: 'uploaded via urls',
-						response: response.data,
-					},
-				});
-			}
-			// Cas 4 : rien fourni
-			else {
-				throw new NodeOperationError(this.getNode(), `Item ${i} : aucun fichier, contenu texte, ni URL fourni.`);
-			}
 		}
 
 		return [returnData];

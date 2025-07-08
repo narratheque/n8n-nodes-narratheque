@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-narratheque",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Node permetant de lier Narrathèque à n8n",
   "keywords": [
     "n8n-community-node-package"
@@ -36,7 +36,9 @@
 
     ],
     "nodes": [
-      "dist/nodes/NarrathequeNode/NarrathequeNode.node.js"
+      "dist/nodes/NarrathequeTextNode/NarrathequeTextNode.node.js",
+      "dist/nodes/NarrathequeDataNode/NarrathequeDataNode.node.js",
+      "dist/nodes/NarrathequeUrlsNode/NarrathequeUrlsNode.node.js"
     ]
   },
   "devDependencies": {

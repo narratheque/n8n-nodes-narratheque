@@ -158,7 +158,7 @@ export class NarrathequeTextNode implements INodeType {
 					},
 				});
 			} catch (error) {
-				throw new NodeOperationError(this.getNode(), `Request failed for item ${i + 1}: ${error.message}`, { cause: error });
+				throw new NodeOperationError(this.getNode(), `Request failed for item ${i + 1}: ${error.message}`);
 			}
 		}
 

@@ -79,20 +79,19 @@ export class NarrathequeTextNode implements INodeType {
 				name: 'textContent',
 				type: 'string',
 				default: '',
-				description: 'Text to send to the Narrathèque. You can use expressions like {{ $json.title }}.',
+				description: 'Text to send to the Narrathèque',
 				required: true,
 				typeOptions: {
 					rows: 5,
 				},
 			},
 			{
-				displayName: 'Filename (optional)',
+				displayName: 'Filename (Optional)',
 				name: 'filename',
 				type: 'string',
 				default: '',
 				placeholder: 'example.txt',
 				description: 'Custom filename for the uploaded text file (optional). ".txt" will be added if not present.',
-				required: false,
 			}
 		],
 	};

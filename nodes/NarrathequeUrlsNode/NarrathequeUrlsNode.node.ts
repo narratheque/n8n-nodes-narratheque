@@ -15,16 +15,29 @@ export class NarrathequeUrlsNode implements INodeType {
 		icon: 'file:icon.svg',
 		documentationUrl: 'https://narratheque.io/docs/n8n',
 		version: 1,
-		description: 'Noeux qui permet d\'interagir avec la Narrathèque et d\'y ajouter des urls dans ses companies',
+		description: 'Envoie des URLs à la Narrathèque depuis un champ d\'entrée',
 		defaults: {
 			name: 'Narrathèque Node - URL',
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		credentials: [
+			{
+				name: 'narrathequeCredentialsApi',
+				required: true,
+			},
+		],
 		usableAsTool: true,
 		properties: [
 			{
-				displayName: 'Narratheque Choice',
+				displayName: 'Nom du champ contenant l’URL',
+				name: 'inputFieldName',
+				type: 'string',
+				default: 'image_url',
+				description: 'Nom du champ dans chaque item contenant l’URL à envoyer',
+			},
+			{
+				displayName: 'Predefined URL',
 				name: 'predefinedUrl',
 				type: 'options',
 				options: [
@@ -38,14 +51,9 @@ export class NarrathequeUrlsNode implements INodeType {
 					},
 				],
 				default: 'https://api.narratheque.io',
-				displayOptions: {
-					show: {
-						useCustomUrl: [false],
-					},
-				},
 			},
 			{
-				displayName: 'Custom Install',
+				displayName: 'Use Custom URL',
 				name: 'useCustomUrl',
 				type: 'boolean',
 				default: false,
@@ -56,71 +64,46 @@ export class NarrathequeUrlsNode implements INodeType {
 				type: 'string',
 				default: '',
 				placeholder: 'https://your.custom.url',
-				displayOptions: {
-					show: {
-						useCustomUrl: [true],
-					},
-				},
 			},
-			{
-				displayName: 'Company Token',
-        name: 'token',
-        type: 'string',
-								typeOptions: { password: true },
-        default: '',
-				description: 'Token from your company in narratheque.io or your custom instance',
-        placeholder: 'cxx-xxx-xxx-xxx',
-				required: true,
-      },
-			{
-				displayName: 'List of URLs',
-				name: 'urlList',
-				type: 'string',
-				typeOptions: {
-					multipleValues: true,
-					multipleValueButtonText: 'Add URL',
-				},
-				default: [],
-				placeholder: 'https://example.com/file.jpg',
-				description: 'URLs to send if no binary file is provided',
-			}
 		],
 	};
 
-	// The function below is responsible for actually doing whatever this node
-	// is supposed to do. In this case, we're just appending the `myString` property
-	// with whatever the user has entered.
-	// You can make async calls and use `await`.
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
-		const returnData: INodeExecutionData[] = [];
 
-		for (let i = 0; i < items.length; i++) {
-			const useCustomUrl = this.getNodeParameter('useCustomUrl', i) as boolean;
-			const urlBase = useCustomUrl
-				? (this.getNodeParameter('customUrl', i) as string)
-				: (this.getNodeParameter('predefinedUrl', i) as string);
+		const credentials = await this.getCredentials('narrathequeCredentialsApi');
+		const token = credentials.token as string;
 
-			const token = this.getNodeParameter('token', i) as string;
-			const urlList = this.getNodeParameter('urlList', i) as string[];
+		const inputFieldName = this.getNodeParameter('inputFieldName', 0) as string;
 
-			const headers = {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${token}`,
-				};
+		const useCustomUrl = this.getNodeParameter('useCustomUrl', 0) as boolean;
+		const urlBase = useCustomUrl
+			? (this.getNodeParameter('customUrl', 0) as string)
+			: (this.getNodeParameter('predefinedUrl', 0) as string);
 
-				const response = await axios.post(`${urlBase}/api/app/documents-jwt-from-urls`, {
-					urls: urlList,
-				}, { headers });
+		const urls = items
+			.map(item => item.json?.[inputFieldName])
+			.filter((u): u is string => typeof u === 'string');
 
-				returnData.push({
-					json: {
-						status: 'uploaded via urls',
-						response: response.data,
-					},
-				});
+		if (urls.length === 0) {
+			throw new Error(`Aucune URL trouvée dans le champ "${inputFieldName}".`);
 		}
 
-		return [returnData];
+		const headers = {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${token}`,
+		};
+
+		const response = await axios.post(`${urlBase}/api/app/documents-jwt-from-urls`, {
+			urls,
+		}, { headers });
+
+		return [[{
+			json: {
+				status: 'uploaded via urls',
+				sentUrls: urls,
+				response: response.data,
+			},
+		}]];
 	}
 }

@@ -23,6 +23,12 @@ export class NarrathequeDataNode implements INodeType {
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		credentials: [
+			{
+				name: 'narrathequeCredentialsApi',
+				required: true,
+			},
+		],
 		usableAsTool: true,
 		properties: [
 			{
@@ -65,16 +71,6 @@ export class NarrathequeDataNode implements INodeType {
 				},
 			},
 			{
-				displayName: 'Company Token',
-        name: 'token',
-        type: 'string',
-								typeOptions: { password: true },
-        default: '',
-				description: 'Token from your company in narratheque.io or your custom instance',
-        placeholder: 'cxx-xxx-xxx-xxx',
-				required: true,
-      },
-			{
         displayName: 'Binary Property',
         name: 'binaryPropertyName',
         type: 'string',
@@ -98,7 +94,9 @@ export class NarrathequeDataNode implements INodeType {
 				? (this.getNodeParameter('customUrl', i) as string)
 				: (this.getNodeParameter('predefinedUrl', i) as string);
 
-			const token = this.getNodeParameter('token', i) as string;
+			const credentials = await this.getCredentials('narrathequeCredentialsApi');
+			const token = credentials.token as string;
+
 			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
 
 			const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);

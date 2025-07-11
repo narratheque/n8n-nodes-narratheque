@@ -23,6 +23,12 @@ export class NarrathequeTextNode implements INodeType {
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		credentials: [
+			{
+				name: 'narrathequeCredentialsApi',
+				required: true,
+			},
+		],
 		usableAsTool: true,
 		properties: [
 			{
@@ -65,16 +71,6 @@ export class NarrathequeTextNode implements INodeType {
 				},
 			},
 			{
-				displayName: 'Company Token',
-        name: 'token',
-        type: 'string',
-								typeOptions: { password: true },
-        default: '',
-				description: 'Token from your company in narratheque.io or your custom instance',
-        placeholder: 'cxx-xxx-xxx-xxx',
-				required: true,
-      },
-			{
 				displayName: 'Text Content',
 				name: 'textContent',
 				type: 'string',
@@ -111,7 +107,8 @@ export class NarrathequeTextNode implements INodeType {
 					? (this.getNodeParameter('customUrl', i) as string)
 					: (this.getNodeParameter('predefinedUrl', i) as string);
 
-				const token = this.getNodeParameter('token', i) as string;
+				const credentials = await this.getCredentials('narrathequeCredentialsApi');
+				const token = credentials.token as string;
 				const textContent = this.getNodeParameter('textContent', i) as string;
 				const userFilename = this.getNodeParameter('filename', i, '') as string;
 

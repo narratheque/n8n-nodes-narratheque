@@ -5,9 +5,9 @@ import {
 	INodeProperties,
 } from 'n8n-workflow';
 
-export class ExampleCredentialsApi implements ICredentialType {
-	name = 'exampleCredentialsApi';
-	displayName = 'Example Credentials API';
+export class NarrathequeCredentialsApi implements ICredentialType {
+	name = 'narrathequeCredentialsApi';
+	displayName = 'Narratheque  Credentials API';
 
 	documentationUrl = 'https://your-docs-url';
 
@@ -16,20 +16,14 @@ export class ExampleCredentialsApi implements ICredentialType {
 		// Properties can be defined exactly in the same way
 		// as node properties.
 		{
-			displayName: 'User Name',
-			name: 'username',
-			type: 'string',
-			default: '',
-		},
-		{
-			displayName: 'Password',
-			name: 'password',
+			displayName: 'Token',
+			name: 'token',
 			type: 'string',
 			typeOptions: {
 				password: true,
 			},
 			default: '',
-		},
+		}
 	];
 
 	// This credential is currently not used by any node directly

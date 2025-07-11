@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-narratheque",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Node permetant de lier Narrathèque à n8n",
   "keywords": [
     "n8n-community-node-package"
